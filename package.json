@@ -1,0 +1,45 @@
+{
+  "name": "ps-backend",
+  "version": "0.8.0",
+  "description": "PC Shop, Back-end, build with Node.js Express to serve ps-frontend client application.",
+  "main": "index.js",
+  "scripts": {
+    "start": "nodemon index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Y-Moshe/ps-backend.git"
+  },
+  "keywords": [
+    "node.js",
+    "express.js",
+    "passport.js",
+    "mongoose.js",
+    "multer.js",
+    "jwt"
+  ],
+  "author": "Moshe",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Y-Moshe/ps-backend/issues"
+  },
+  "homepage": "https://github.com/Y-Moshe/ps-backend#readme",
+  "dependencies": {
+    "aws-sdk": "^2.884.0",
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^4.0.0",
+    "express": "^4.17.1",
+    "jsonwebtoken": "^8.5.1",
+    "mongoose": "^5.12.3",
+    "mongoose-paginate-v2": "^1.3.17",
+    "mongoose-unique-validator": "^2.0.3",
+    "multer": "^1.4.2",
+    "multer-s3": "^2.9.0",
+    "passport": "^0.4.1",
+    "passport-jwt": "^4.0.0",
+    "passport-local": "^1.0.0",
+    "sendgrid": "^5.2.3"
+  }
+}
