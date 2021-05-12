@@ -43,6 +43,8 @@ app.use( cors() );
 app.use( express.json() );
 app.use( express.urlencoded({ extended: true }) );
 
+// Passport initialization
+require('./passport');
 app.use(passport.initialize());
 
 app.get('/', ( req, res ) => res.status(200).send('Hello from Node.js server :)'));
