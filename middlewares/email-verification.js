@@ -2,17 +2,14 @@ const jwt = require('jsonwebtoken');
 
 const {
   SENDGRID_API_KEY,
-  SENDGRID_USERNAME,
-  SENDGRID_PASSWORD,
-
   JWT_SECRET,
   CLIENT_URI,
   GMAIL_USER,
   MY_GMAIL_ADDRESS
 } = require('../config');
 
-const helper = require('sendgrid').mail;
-const sendGrid = require('sendgrid')(SENDGRID_API_KEY);
+const sendGridMail = require('@sendgrid/mail');
+sendGridMail.setApiKey( SENDGRID_API_KEY );
 
 const FORGOT_PASSWORD_TEMPLATE = 1,
       VERIFICATION_TEMPLATE = 2,
@@ -89,47 +86,49 @@ function getResponseMessage(template) {
  *
  * @param {number} template The template, use the Template Constants.
  */
-const middleware = (template) => (req, res, next) => {
-  // email is a unique value, and will be used for token.
-  // message is for CONTACT_TEMPLATE case, can be null or undefined.
-  const { email, message, firstName, lastName } = req.body;
-  let fullName = req.body.fullName;
-  let token = '';
-
-  // Basiclly try to get the fullName
-  if (!fullName) {
-    if (firstName && lastName) {
-      fullName = req.body.firstName + ' ' + req.body.lastName;
-    } else {
-      fullName = req.user.firstName + ' ' + req.user.lastName;
+const middleware = (template) => async (req, res, next) => {
+  try {
+    // email is a unique value, and will be used for token.
+    // message is for CONTACT_TEMPLATE case, can be null or undefined.
+    const { email, message, firstName, lastName } = req.body;
+    let fullName = req.body?.fullName;
+    let token = '';
+  
+    // Basiclly try to get the fullName
+    if (!fullName) {
+      if (firstName && lastName) {
+        fullName = req.body.firstName + ' ' + req.body.lastName;
+      } else {
+        fullName = req.user.firstName + ' ' + req.user.lastName;
+      }
     }
+  
+    // In case of FORGOT_PASSWORD_TEMPLATE or VERIFICATION_TEMPLATE create a token
+    if (!template === CONTACT_TEMPLATE) {
+      token = jwt.sign({ email }, JWT_SECRET, { expiresIn: '2h' });
+    }
+  
+    const url = CLIENT_URI.concat('/auth/',
+      template === FORGOT_PASSWORD_TEMPLATE ? 'reset-password' : 'verify', '?token=', token);
+  
+    // If it's CONTACT_TEMPLATE, send email to MY_GMAIL_ADDRESS, otherwise send from GMAIL_USER to user email
+    const from = template === CONTACT_TEMPLATE ? email : GMAIL_USER;
+    const to = template === CONTACT_TEMPLATE ? MY_GMAIL_ADDRESS : email;
+  
+    const subject = 'no-replay';
+    const content = getTemplate(template, fullName, url, message, email);
+
+    await sendGridMail.send({
+      from,
+      to,
+      subject,
+      html: content
+    });
+
+    res.status(200).json({ message: getResponseMessage(template) });
+  } catch (error) {
+    next( error );
   }
-
-  // In case of FORGOT_PASSWORD_TEMPLATE or VERIFICATION_TEMPLATE create a token
-  if (!template === CONTACT_TEMPLATE) {
-    token = jwt.sign({ email }, JWT_SECRET, { expiresIn: '2h' });
-  }
-
-  const url = CLIENT_URI.concat('/auth/',
-    template === FORGOT_PASSWORD_TEMPLATE ? 'reset-password' : 'verify', '?token=', token);
-
-  // If it's CONTACT_TEMPLATE, send email to MY_GMAIL_ADDRESS, otherwise send from GMAIL_USER to user email
-  const from = new helper.Email(template === CONTACT_TEMPLATE ? email : GMAIL_USER);
-  const to = new helper.Email(template === CONTACT_TEMPLATE ? MY_GMAIL_ADDRESS : email);
-
-  const subject = 'no-replay';
-  const content = new helper.Content('text/html', getTemplate(template, fullName, url, message, email));
-
-  const mail = new helper.Mail(from, subject, to, content);
-  const request = sendGrid.emptyRequest({
-    method: 'POST',
-    path: '/v3/mail/send',
-    body: mail.toJSON(),
-  });
-
-  sendGrid.API(request)
-    .then(() => res.status(200).json({ message: getResponseMessage(template) }))
-    .catch(error => next( error ));
 };
 
 module.exports = {

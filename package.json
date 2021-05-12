@@ -1,6 +1,6 @@
 {
   "name": "ps-backend",
-  "version": "0.8.0",
+  "version": "0.8.1",
   "description": "PC Shop, Back-end, build with Node.js Express to serve ps-frontend client application.",
   "main": "index.js",
   "scripts": {
@@ -26,10 +26,11 @@
   },
   "homepage": "https://github.com/Y-Moshe/ps-backend#readme",
   "dependencies": {
+    "@sendgrid/mail": "^7.4.4",
     "aws-sdk": "^2.884.0",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
-    "dotenv": "^4.0.0",
+    "dotenv": "^9.0.2",
     "express": "^4.17.1",
     "jsonwebtoken": "^8.5.1",
     "mongoose": "^5.12.3",
@@ -37,9 +38,9 @@
     "mongoose-unique-validator": "^2.0.3",
     "multer": "^1.4.2",
     "multer-s3": "^2.9.0",
+    "nodemon": "^2.0.7",
     "passport": "^0.4.1",
     "passport-jwt": "^4.0.0",
-    "passport-local": "^1.0.0",
-    "sendgrid": "^5.2.3"
+    "passport-local": "^1.0.0"
   }
 }
