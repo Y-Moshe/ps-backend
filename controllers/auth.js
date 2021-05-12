@@ -13,36 +13,37 @@ const { CustomError } = require('../utils');
 
 // POST: /api/v@/auth/signup
 const createUser = async (req, res, next) => {
-    const {
-        firstName,
-        lastName,
-        userName,
-        email,
-        password
-    } = req.body;
-
-    const user = new User({
-        firstName,
-        lastName,
-        userName,
-        email,
-        role: INITIAL_USER_RANK_ID,
-        creationDate: new Date()
-    });
-
-    // Hashing the password
-    user.password = bcrypt.hashSync(password, PASSWORD_HASH_SALT);
-
-    // Creating the imagePath (if there's no image, default imagePath is set).
-    const uri = req.protocol + '://' + req.get('host');
-    if (req.file) {
-        user.imagePath = AWS_URL.concat('/', req.file.key);
-    } else {
-        user.imagePath = uri.concat('/assets/images/default.png');
-    }
-    
-    // Saving the user to Database and calling next middlewere to send email verfication message.
     try {
+        const {
+            firstName,
+            lastName,
+            userName,
+            email,
+            password
+        } = req.body;
+    
+        const user = new User({
+            firstName,
+            lastName,
+            userName,
+            email,
+            role: INITIAL_USER_RANK_ID,
+            creationDate: new Date()
+        });
+    
+        // Hashing the password
+        user.password = bcrypt.hashSync(password, PASSWORD_HASH_SALT);
+    
+        // Creating the imagePath (if there's no image, default imagePath is set).
+        const uri = req.protocol + '://' + req.get('host');
+        if (req.file) {
+            user.imagePath = AWS_URL.concat('/', req.file.key);
+        } else {
+            user.imagePath = uri.concat('/assets/images/default.png');
+        }
+        
+        // Saving the user to Database and calling next middlewere to send email verfication message.
+        
         req.user = await user.save();
         next();
     } catch (error) {
@@ -109,9 +110,9 @@ const verifyEmail = async (req, res, next) => {
 const verifyToken = async (req, res, next) => {
     try {
         const { token } = req.body;
-        const decodedToken = jwt.verify(token, JWT_SECRET);
+        const { _id } = jwt.verify(token, JWT_SECRET);
 
-        const user = await User.findOne({ _id: decodedToken._id }).lean();
+        const user = await User.findOne({ _id }).lean();
         if (!user) {
             throw new CustomError('Could not found the user', 404);
         }
@@ -159,7 +160,7 @@ const changePassword = async (req, res, next) => {
 };
 
 // POST: /api/v@/auth/password/forgot
-const forgotPassword = (req, res, next) => {
+const forgotPassword = async (req, res, next) => {
     try {
         const email = req.body.email.toLowerCase();
     
@@ -181,7 +182,7 @@ const forgotPassword = (req, res, next) => {
 };
 
 // POST: /api/v@/auth/password/reset
-const resetPassword = (req, res, next) => {
+const resetPassword = async (req, res, next) => {
     try {
         const { newPassword, userId } = req.body;
     
