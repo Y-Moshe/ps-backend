@@ -1,30 +1,38 @@
-const mongoose = require('mongoose');
-const Schema = mongoose.Schema;
+const mongoose = require('mongoose'),
+      { isValidLink } = require('./validators');
+const { Schema } = mongoose;
 
 const productSchema = new Schema({
   name: {
     type: String,
-    required: true
+    required: 'Product name is required!',
+    minLength: [3, 'Product name too short'],
+    trim: true
   },
   description: {
     type: String,
-    required: true
+    trim: true
   },
   imagePath: {
     type: String,
-    required: true
+    required: 'Product image link is required!',
+    validate: {
+      validator: isValidLink,
+      message: 'Invalid product image link!'
+    }
   },
   price: {
     type: Number,
-    required: true
+    required: 'Product price is required!'
   },
   content: {
     type: String,
-    required: true
+    trim: true
   },
+
   category: {
     type: Schema.Types.ObjectId,
-    required: true,
+    required: 'Category id is required in order to bound the product to the relevant category',
     ref: 'Category'
   },
   comments: [
@@ -32,7 +40,12 @@ const productSchema = new Schema({
       type: Schema.Types.ObjectId,
       ref: 'Comment'
     }
-  ]
+  ],
+
+  creationDate: {
+    type: Date,
+    default: new Date()
+  }
 });
 
 module.exports = mongoose.model('Product', productSchema);
