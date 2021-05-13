@@ -1,19 +1,16 @@
 const mongoose = require('mongoose');
-const Schema = mongoose.Schema;
+const { Schema } = mongoose;
 
 const commentSchema = new Schema({
   text: {
     type: String,
     required: 'Comment text is required',
-    minLength: [3, 'Category name too short']
+    minLength: [3, 'The Comment is too short'],
+    trim: true
   },
   lastEdit: {
     type: Date,
-    default: 0
-  },
-  creationDate: {
-    type: Date,
-    default: new Date()
+    default: null
   },
 
   user: {
@@ -25,6 +22,11 @@ const commentSchema = new Schema({
     type: Schema.Types.ObjectId,
     required: 'Product id is required in order to bound the comment to the product',
     ref: 'Product'
+  },
+
+  creationDate: {
+    type: Date,
+    default: new Date()
   }
 });
 
