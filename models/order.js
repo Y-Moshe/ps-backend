@@ -1,5 +1,6 @@
-const mongoose = require('mongoose');
-const Schema = mongoose.Schema;
+const mongoose = require('mongoose'),
+      { isValidPhone } = require('./validators');
+const { Schema } = mongoose;
 
 const orderSchema = new Schema({
   user: {
@@ -8,10 +9,38 @@ const orderSchema = new Schema({
     ref: 'User'
   },
 
-  shippingInfo: {
-    type: Object,
-    required: 'Shipping information is required!'
+  country: {
+    type: String,
+    required: 'Country is required!',
+    trim: true
   },
+  city: {
+    type: String,
+    required: 'City is required!',
+    trim: true
+  },
+  streetAddress: {
+    type: String,
+    trim: true
+  },
+  province: {
+    type: String,
+    trim: true
+  },
+  zipCode: {
+    type: String,
+    required: 'Zip code is required!',
+    trim: true
+  },
+  phone: {
+    type: String,
+    required: 'Phone number is required!',
+    validate: {
+      validator: isValidPhone,
+      message: 'Invalid phone number'
+    }
+  },
+
   products: [
     {
       type: Schema.Types.ObjectId,
@@ -21,6 +50,7 @@ const orderSchema = new Schema({
   quantities: {
     [Schema.Types.ObjectId]: Number
   },
+
   status: {
     type: String,
     enum: {
@@ -29,11 +59,15 @@ const orderSchema = new Schema({
     },
     default: 'Processing'
   },
-  orderDate: {
-    type: Number,
-    default: new Date()
+  receivedAt: {
+    type: Date,
+    default: null
   },
-  acceptedAt: Date,
+
+  creationDate: {
+    type: Date,
+    default: new Date()
+  }
 });
 
 module.exports = mongoose.model('Order', orderSchema);
