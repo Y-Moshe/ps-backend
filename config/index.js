@@ -2,7 +2,7 @@ module.exports = {
     DB_CONNECTION_STRING: process.env.DB_CONNECTION_STRING,
     PORT: process.env.PORT || 7001,
     JWT_SECRET: process.env.JWT_SECRET,
-    INITIAL_USER_RANK_ID: "5fd11a2a5876d8ba4b2202e6",
+    INITIAL_USER_RANK_ID: "this gets override, no need to set",
     PASSWORD_HASH_SALT: 10,
 
     AWS_ACCESS_KEY_ID: process.env.AWS_ACCESS_KEY_ID,

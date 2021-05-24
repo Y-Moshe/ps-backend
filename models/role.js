@@ -1,16 +1,23 @@
-const mongoose = require('mongoose');
-const Schema = mongoose.Schema;
+const mongoose = require('mongoose'),
+      uniqueValidator = require('mongoose-unique-validator');
+const { Schema } = mongoose;
 
 const roleSchema = new Schema({
   rank: {
     type: Number,
-    required: true
+    required: 'Rank level is required!',
+    unique: 'Should only be one role with that rank number!'
   },
   title: {
     type: String,
-    required: true
+    required: 'Title is required!',
+    trim: true
   },
-  description: String
+  description: {
+    type: String,
+    trim: true
+  }
 });
+roleSchema.plugin( uniqueValidator );
 
 module.exports = mongoose.model('Role', roleSchema);

@@ -34,6 +34,9 @@ mongoose.connect(DB_CONNECTION_STRING, {
   useUnifiedTopology: true
 }).then(() => {
   console.log('Connected to Database!');
+
+  // Initiate Ranks and Roles
+  require('./functions/initiate-ranks');
 }).catch(error => {
   console.log('Failed to Connect to Database!');
   console.error('Error: ' + error);
