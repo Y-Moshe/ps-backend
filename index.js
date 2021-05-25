@@ -7,8 +7,9 @@ require('dotenv').config();
 const { CONTACT_TEMPLATE, emailVerification } = require('./middlewares/email-verification');
 
 const {
-  CommentsRoutes,
+  AuthRoutes,
   CategoriesRoutes,
+  CommentsRoutes,
   OrdersRoutes,
   ProductsRoutes,
   UsersRoutes
@@ -36,7 +37,7 @@ mongoose.connect(DB_CONNECTION_STRING, {
   console.log('Connected to Database!');
 
   // Initiate Ranks and Roles
-  require('./functions/initiate-ranks');
+  require( './functions/initiate-roles' );
 }).catch(error => {
   console.log('Failed to Connect to Database!');
   console.error('Error: ' + error);
@@ -47,22 +48,24 @@ app.use( express.json() );
 app.use( express.urlencoded({ extended: true }) );
 
 // Passport initialization
-require('./passport');
-app.use(passport.initialize());
+require( './passport' );
+app.use( passport.initialize() );
 
-app.get('/', ( req, res ) => res.status(200).send('Hello from Node.js server :)'));
+app.get( '/', ( req, res ) => res.status(200).send('Hello from Node.js server :)') );
 
-app.use('/assets', express.static( __dirname.concat( '/assets' )));
+app.use( '/assets', express.static( __dirname.concat( '/assets' )) );
 
-app.use( BASE_URI.concat('/users'), UsersRoutes );
-
-app.use( BASE_URI.concat('/products'), ProductsRoutes );
-
-app.use( BASE_URI.concat('/comments'), CommentsRoutes );
+app.use( BASE_URI.concat('/auth'), AuthRoutes );
 
 app.use( BASE_URI.concat('/categories'), CategoriesRoutes );
 
+app.use( BASE_URI.concat('/comments'), CommentsRoutes );
+
 app.use( BASE_URI.concat('/orders'), OrdersRoutes );
+
+app.use( BASE_URI.concat('/products'), ProductsRoutes );
+
+app.use( BASE_URI.concat('/users'), UsersRoutes );
 
 // POST: /api/v@/contact
 app.post( BASE_URI.concat('/contact'), emailVerification( CONTACT_TEMPLATE ));
@@ -71,8 +74,8 @@ app.post( BASE_URI.concat('/contact'), emailVerification( CONTACT_TEMPLATE ));
  * Using a global error handler to catch all types of errors.
  * And trying to find out which error message to send back to the Response!
  */
-app.use(errorHandler);
+app.use( errorHandler );
 
-app.get('/*', ( req, res ) => res.redirect('/'));
+app.get( '/*', ( req, res ) => res.redirect('/') );
 
-app.listen(PORT, () => console.log(`Server(v${ getVersion() }) is running on port: ${ PORT }`))
+app.listen( PORT, () => console.log(`Server(v${ getVersion() }) is running on port: ${ PORT }`) );
