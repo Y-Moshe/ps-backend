@@ -1,7 +1,8 @@
-const checkRole    = require('./check-role'),
+const authenticate = require('./authenticate'),
       errorHandler = require('./error-handler'),
-      jwtAuth      = require('./jwt-auth'),
       validateIds  = require('./validate-ids');
+
+const { authorize, Roles } = require('./authorize');
 
 const {
     CONTACT_TEMPLATE,
@@ -11,9 +12,10 @@ const {
 } = require('./email-verification');
 
 module.exports = {
-    checkRole,
+    authenticate,
+    authorize,
+    Roles,
     errorHandler,
-    jwtAuth,
     validateIds,
 
     CONTACT_TEMPLATE,
