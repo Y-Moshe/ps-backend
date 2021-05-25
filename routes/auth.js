@@ -7,7 +7,7 @@ const {
 } = require('../middlewares/email-verification');
 const controllers = require('../controllers/auth');
 const { upload } = require('../functions');
-const { jwtAuth } = require('../middlewares');
+const { authenticate } = require('../middlewares');
 
 
 const routes = express.Router();
@@ -26,13 +26,13 @@ routes.post( '/login', controllers.loginUser );
 routes.post( '/verify/email', controllers.verifyEmail );
 
 // POST: /api/v@/auth/verify/email/resend (Protected)
-routes.post( '/verify/email/resend', jwtAuth, emailVerification( VERIFICATION_TEMPLATE ));
+routes.post( '/verify/email/resend', authenticate, emailVerification( VERIFICATION_TEMPLATE ));
 
 // POST: /api/v@/auth/verify/token
 routes.post( '/verify/token', controllers.verifyToken );
 
 // POST: /api/v@/auth/password/change (Protected)
-routes.post( '/password/change', jwtAuth, controllers.changePassword );
+routes.post( '/password/change', authenticate, controllers.changePassword );
 
 // POST: /api/v@/auth/password/forgot
 routes.post( '/password/forgot', controllers.forgotPassword, emailVerification( FORGOT_PASSWORD_TEMPLATE ));

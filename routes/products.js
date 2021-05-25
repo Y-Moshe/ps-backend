@@ -2,7 +2,7 @@ const express = require('express');
 
 const controllers = require('../controllers/products');
 const { upload } = require('../functions');
-const { checkRole, jwtAuth } = require('../middlewares');
+const { authenticate, authorize, Roles } = require('../middlewares');
 
 // Protected route is a route that require a valid token to be sent via HTTP Header!
 // Short words, User must be logged in.
@@ -19,14 +19,14 @@ routes.get( '/random', controllers.get3RandomProducts );
 // GET: /api/v@/products/:id
 routes.get( '/:id', controllers.getProduct );
 
-// POST: /api/v@/products (Protected, Admin Route)
-routes.post( '', jwtAuth, checkRole(2), upload.single('image'), controllers.addProduct );
+// POST: /api/v@/products (Protected)
+routes.post( '', authenticate, authorize( Roles.EDITOR ), upload.single('image'), controllers.addProduct );
 
-// PATCH: /api/v@/products/:id (Protected, Admin Route)
-routes.patch( '/:id', jwtAuth, checkRole(2), upload.single('image'), controllers.editProduct );
+// PATCH: /api/v@/products/:id (Protected)
+routes.patch( '/:id', authenticate, authorize( Roles.EDITOR ), upload.single('image'), controllers.editProduct );
 
-// DELETE: /api/v@/products/:id (Protected, Admin Route)
-routes.delete( '/:id', jwtAuth, checkRole(2), controllers.deleteProduct );
+// DELETE: /api/v@/products/:id (Protected)
+routes.delete( '/:id', authenticate, authorize( Roles.ADMINISTRATOR ), controllers.deleteProduct );
 
 /***** Comments Ralated routes *****/
 
@@ -34,6 +34,6 @@ routes.delete( '/:id', jwtAuth, checkRole(2), controllers.deleteProduct );
 routes.get( '/:id/comments', controllers.getProductComments );
 
 // POST: /api/v@/products/:id/comments (Protected)
-routes.post( '/:id/comments', jwtAuth, controllers.addCommentToProduct );
+routes.post( '/:id/comments', authenticate, controllers.addCommentToProduct );
 
 module.exports = routes;

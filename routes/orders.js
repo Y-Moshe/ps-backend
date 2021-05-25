@@ -1,7 +1,7 @@
 const express = require('express');
 
 const controllers = require('../controllers/orders');
-const { checkRole, jwtAuth } = require('../middlewares');
+const { authenticate, authorize, Roles } = require('../middlewares');
 
 const routes = express.Router();
 
@@ -9,16 +9,16 @@ const routes = express.Router();
 // Short words, User must be logged in.
 // v@ = dynamic version base on package.json, example: /api/v2/users
 
-// GET: /api/v@/orders (Admin Route)
-routes.get( '', jwtAuth, checkRole(2), controllers.getOrders );
+// GET: /api/v@/orders
+routes.get( '', authenticate, authorize( Roles.MANAGER ), controllers.getOrders );
 
 // GET: /api/v@/orders/:id (Protected)
-routes.get( '/:id', jwtAuth, controllers.getOrder );
+routes.get( '/:id', authenticate, controllers.getOrder );
 
 // POST: /api/v@/orders (Protected)
-routes.post( '', jwtAuth, controllers.order );
+routes.post( '', authenticate, controllers.order );
 
 // PUT: /api/v@/orders/:id (Protected)
-routes.put( '/:id', jwtAuth, controllers.putStatus );
+routes.put( '/:id', authenticate, controllers.putStatus );
 
 module.exports = routes;
