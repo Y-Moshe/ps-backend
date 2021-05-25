@@ -12,22 +12,22 @@ const initiate = async () => {
         {
             rank: Roles.MEMBER,
             title: 'Member',
-            description: 'The initial user role.'
+            description: 'The initial user role, can make orders, update account details.'
         },
         {
             rank: Roles.EDITOR,
             title: 'Editor',
-            description: 'Can edit products, add new categories.'
+            description: 'Can edit, add products and categories.'
         },
         {
             rank: Roles.MANAGER,
             title: 'Manager',
-            description: 'Can set members to editor role, edit and delete product comments.'
+            description: 'Can view all orders, comments.'
         },
         {
             rank: Roles.ADMINISTRATOR,
             title: 'Administrator',
-            description: 'A Higher level than Manager, can do the most.'
+            description: 'Can delete products, set user roles and ban users.'
         },
         {
             rank: Roles.S_ADMINISTRATOR,
