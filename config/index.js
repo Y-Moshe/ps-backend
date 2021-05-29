@@ -11,10 +11,8 @@ module.exports = {
     AWS_URL: process.env.AWS_URL,
 
     SENDGRID_API_KEY: process.env.SENDGRID_API_KEY,
-    SENDGRID_PASSWORD: process.env.SENDGRID_PASSWORD,
     SENDGRID_USERNAME: process.env.SENDGRID_USERNAME,
 
     CLIENT_URI: "http://localhost:3000",
-    GMAIL_USER: "",
     MY_GMAIL_ADDRESS: ""
 }
