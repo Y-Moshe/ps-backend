@@ -1,6 +1,6 @@
 {
   "name": "ps-backend",
-  "version": "0.8.1",
+  "version": "0.8.3",
   "description": "PC Shop, Back-end, build with Node.js Express to serve ps-frontend client application.",
   "main": "index.js",
   "scripts": {
@@ -32,6 +32,7 @@
     "cors": "^2.8.5",
     "dotenv": "^9.0.2",
     "express": "^4.17.1",
+    "handlebars": "^4.7.7",
     "jsonwebtoken": "^8.5.1",
     "mongoose": "^5.12.3",
     "mongoose-paginate-v2": "^1.3.17",
