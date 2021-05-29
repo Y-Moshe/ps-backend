@@ -4,8 +4,6 @@ const express = require('express'),
       passport = require('passport');
 require('dotenv').config();
 
-const { CONTACT_TEMPLATE, emailVerification } = require('./middlewares/email-verification');
-
 const {
   AuthRoutes,
   CategoriesRoutes,
@@ -14,6 +12,7 @@ const {
   ProductsRoutes,
   UsersRoutes
 } = require('./routes');
+const contactController = require('./controllers/contact');
 const { errorHandler } = require('./middlewares');
 
 const { DB_CONNECTION_STRING, PORT } = require('./config');
@@ -68,7 +67,7 @@ app.use( BASE_URI.concat('/products'), ProductsRoutes );
 app.use( BASE_URI.concat('/users'), UsersRoutes );
 
 // POST: /api/v@/contact
-app.post( BASE_URI.concat('/contact'), emailVerification( CONTACT_TEMPLATE ));
+app.post( BASE_URI.concat('/contact'), contactController );
 
 /**
  * Using a global error handler to catch all types of errors.
