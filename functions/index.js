@@ -1,8 +1,8 @@
 const upload = require('./image-upload'),
-      { getTemplate, emailSend } = require('./email/email-send');
+      { emailSend, Templates } = require('./email-send');
 
 module.exports = {
     upload,
-    getTemplate,
+    Templates,
     emailSend
 };
