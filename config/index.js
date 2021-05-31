@@ -2,7 +2,6 @@ module.exports = {
     DB_CONNECTION_STRING: process.env.DB_CONNECTION_STRING,
     PORT: process.env.PORT || 7001,
     JWT_SECRET: process.env.JWT_SECRET,
-    INITIAL_USER_RANK_ID: "this gets override, no need to set",
     PASSWORD_HASH_SALT: 10,
 
     AWS_ACCESS_KEY_ID: process.env.AWS_ACCESS_KEY_ID,
@@ -11,8 +10,7 @@ module.exports = {
     AWS_URL: process.env.AWS_URL,
 
     SENDGRID_API_KEY: process.env.SENDGRID_API_KEY,
-    SENDGRID_USERNAME: process.env.SENDGRID_USERNAME,
+    SENDGRID_VERIFIED_SENDER: process.env.SENDGRID_VERIFIED_SENDER,
 
-    CLIENT_URI: "http://localhost:3000",
-    MY_GMAIL_ADDRESS: ""
+    CLIENT_URI: "http://localhost:3000"
 }
