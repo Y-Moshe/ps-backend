@@ -1,15 +1,20 @@
-const bcrypt = require('bcryptjs'),
+const bcrypt   = require('bcryptjs'),
       passport = require('passport'),
-      jwt = require('jsonwebtoken');
+      jwt      = require('jsonwebtoken');
 
 const {
-    INITIAL_USER_RANK_ID,
     PASSWORD_HASH_SALT,
     AWS_URL,
-    JWT_SECRET
+    JWT_SECRET,
+    CLIENT_URI
 } = require('../config');
-const { User } = require('../models');
-const { CustomError } = require('../utils');
+const { User }                 = require('../models');
+const { Templates, emailSend } = require('../functions');
+const { CustomError }          = require('../utils');
+
+const VERIFICATION_TOKEN_EXPIRES_IN = '2h';
+const LOGIN_TOKEN_EXPIRES_IN        = '3h';
+const LOGIN_TOKEN_REME_EXPIRES_IN   = '3d'; // The remember me option
 
 // POST: /api/v@/auth/signup
 const createUser = async (req, res, next) => {
@@ -27,25 +32,45 @@ const createUser = async (req, res, next) => {
             lastName,
             userName,
             email,
-            role: INITIAL_USER_RANK_ID,
-            creationDate: new Date()
+            role: process.env.INITIAL_USER_RANK_ID
         });
     
         // Hashing the password
-        user.password = bcrypt.hashSync(password, PASSWORD_HASH_SALT);
+        user.password = await bcrypt.hash(password, PASSWORD_HASH_SALT);
     
         // Creating the imagePath (if there's no image, default imagePath is set).
-        const uri = req.protocol + '://' + req.get('host');
+        const uri = req.protocol.concat('://', req.get('host'));
         if (req.file) {
             user.imagePath = AWS_URL.concat('/', req.file.key);
         } else {
             user.imagePath = uri.concat('/assets/images/default.png');
         }
         
-        // Saving the user to Database and calling next middlewere to send email verfication message.
-        
-        req.user = await user.save();
-        next();
+        // Save use to Databse.
+        await user.save();
+        delete user.password;
+
+        const userToken = jwt.sign({ ...user }, JWT_SECRET, { expiresIn: LOGIN_TOKEN_EXPIRES_IN });
+        // Sending email verification message
+        const verifyToken = jwt.sign({ email }, JWT_SECRET, { expiresIn: VERIFICATION_TOKEN_EXPIRES_IN });
+        const url = CLIENT_URI.concat('/auth/verify?token=', verifyToken);
+        const templateData = {
+            fullName: firstName + ' ' + lastName,
+            verifyLink: url
+        };
+
+        await emailSend(
+            email,
+            Templates.VERIFY_EMAIL,
+            templateData
+        );
+
+        res.status(201).json({
+            message: 'An E-Mail message has been sent to your email address, please check your mailbox and verify your email address.',
+            user,
+            token: userToken,
+            expiresIn: LOGIN_TOKEN_EXPIRES_IN
+        });
     } catch (error) {
         next( error );
     }
@@ -64,13 +89,11 @@ const loginUser = (req, res, next) => {
         return res.status(401).json( info );
     }
 
-    let expiresIn = '3h';
-    if (req.body.reMe) {
-        expiresIn = '3d';
-    }
+    let expiresIn = req.body.reMe ?
+        LOGIN_TOKEN_REME_EXPIRES_IN : LOGIN_TOKEN_EXPIRES_IN;
+    delete user.password;
 
-
-    const token = jwt.sign({ user }, JWT_SECRET, { expiresIn });
+    const token = jwt.sign({ ...user }, JWT_SECRET, { expiresIn });
 
     res.status(200).json({
         token: token,
@@ -92,7 +115,7 @@ const verifyEmail = async (req, res, next) => {
         }
 
         if (user.isVerified) {
-            throw new CustomError('Your email already verified!', 208);
+            throw new CustomError('Your email is already verified!', 208);
         }
         user.isVerified = true;
         await user.save();
@@ -106,18 +129,45 @@ const verifyEmail = async (req, res, next) => {
     }
 };
 
+// POST: /api/v@/auth/verify/email/resend (Protected)
+const resendVerification = async (req, res, next) => {
+    try {
+        const { firstName, lastName, email } = req.user;
+        const token = jwt.sign({ email }, JWT_SECRET, { expiresIn: VERIFICATION_TOKEN_EXPIRES_IN });
+        const url = CLIENT_URI.concat('/auth/verify?token=', token);
+        const templateData = {
+            fullName: firstName + ' ' + lastName,
+            verifyLink: url
+        };
+
+        await emailSend(
+            email,
+            Templates.VERIFY_EMAIL,
+            templateData
+        );
+
+        res.status(200).json({
+            message: 'An E-Mail message has been sent to your email address, please check your mailbox and verify your email address.'
+        });
+    } catch (error) {
+        next( error );
+    }
+};
+
 // POST: /api/v@/auth/verify/token
 const verifyToken = async (req, res, next) => {
     try {
         const { token } = req.body;
         const { _id } = jwt.verify(token, JWT_SECRET);
+        const user = await User.findById( _id )
+                               .select('-password')
+                               .lean();
 
-        const user = await User.findOne({ _id }).lean();
         if (!user) {
             throw new CustomError('Could not found the user', 404);
         }
 
-        res.status(200).json({ token, user });
+        res.status(200).json( user );
     } catch (error) {
         next( error );
     }
@@ -128,7 +178,7 @@ const changePassword = async (req, res, next) => {
     try {
         const { currentPassword, newPassword } = req.body;
         const { _id } = req.user;
-    
+
         const user = await User.findById( _id );
 
         if (!user) {
@@ -140,13 +190,13 @@ const changePassword = async (req, res, next) => {
         }
     
         // comparing aginst the old password
-        const result = bcrypt.compareSync(currentPassword, user.password);
+        const result = await bcrypt.compare(currentPassword, user.password);
         
         if (!result) {
             throw new CustomError('Incorrect password!', 401);
         }
     
-        const hashedPassword = bcrypt.hashSync(newPassword, PASSWORD_HASH_SALT);
+        const hashedPassword = await bcrypt.hash(newPassword, PASSWORD_HASH_SALT);
     
         user.password = hashedPassword;
         await user.save();
@@ -162,7 +212,7 @@ const changePassword = async (req, res, next) => {
 // POST: /api/v@/auth/password/forgot
 const forgotPassword = async (req, res, next) => {
     try {
-        const email = req.body.email.toLowerCase();
+        const email = req.body.email.trim().toLowerCase();
     
         if (email === 'example@demo.com') {
             throw new CustomError('You\'re not allowed to recover demo user password!', 403);
@@ -172,10 +222,24 @@ const forgotPassword = async (req, res, next) => {
         if (!user) {
             throw new CustomError(`Couldn't found an account with this email address(${email })`, 404);
         }
-        // required for the next() middlewere
-        req.user = user;
 
-        next();
+        const token = jwt.sign({ email }, JWT_SECRET, { expiresIn: VERIFICATION_TOKEN_EXPIRES_IN });
+        const url = CLIENT_URI.concat('/auth/reset-password?token=', token);
+        const templateData = {
+            fullName: user.firstName + ' ' + user.lastName,
+            resetPasswordLink: url,
+            contactLink: CLIENT_URI.concat('/contact')
+        };
+
+        await emailSend(
+            email,
+            Templates.PASSWORD_RESET,
+            templateData
+        );
+
+        res.status(200).json({
+            message: 'Your request has been accepted successfully, please check your mailbox and continue this process!'
+        });
     } catch (error) {
         next( error );
     }
@@ -184,15 +248,15 @@ const forgotPassword = async (req, res, next) => {
 // POST: /api/v@/auth/password/reset
 const resetPassword = async (req, res, next) => {
     try {
-        const { newPassword, userId } = req.body;
-    
-        const user = await User.findById( userId );
+        const { newPassword, token } = req.body;
+        const { _id } = jwt.decode( token );
+        const user = await User.findById( _id );
 
         if (!user) {
             throw new CustomError('Could not found the user', 404);
         }
 
-        const hashedPassword = bcrypt.hashSync(newPassword, PASSWORD_HASH_SALT);
+        const hashedPassword = await bcrypt.hash(newPassword, PASSWORD_HASH_SALT);
         user.password = hashedPassword;
         await user.save();
     
@@ -208,6 +272,7 @@ module.exports = {
     createUser,
     loginUser,
     verifyEmail,
+    resendVerification,
     verifyToken,
     changePassword,
     forgotPassword,
