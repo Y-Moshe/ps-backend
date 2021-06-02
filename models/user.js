@@ -7,6 +7,7 @@ const {
     isValidLink,
     isValidUserName
 } = require('./validators');
+const { Roles } = require('../middlewares');
 const { Schema } = mongoose;
 
 const userSchema = new Schema({
@@ -59,9 +60,9 @@ const userSchema = new Schema({
         }
     ],
     role: {
-        type: Schema.Types.ObjectId,
-        required: 'User role must be set!',
-        ref: 'Role'
+        type: Number,
+        default: Roles.MEMBER,
+        ref: 'Role',
     },
 
     creationDate: {

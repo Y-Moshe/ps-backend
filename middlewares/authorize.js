@@ -9,19 +9,21 @@ const Roles = {
 };
 
 /**
- * This Middleware checks user access authorization by his role and rank.
- * @requires `authenticate` middleware to be used before!
- * @param {number} requiredRankLevel The required rank level, use `Roles` constant.
+ * This Middleware checks user access authorization by his role.
+ * @requires `authenticate` Middleware to be used before!
+ * @param {number} requiredRoleLevel The required role level, use `Roles` constant.
  * @returns express middleware
  */
-const middleware = ( requiredRankLevel ) => (req, res, next) => {
+const middleware = ( requiredRoleLevel ) => (req, res, next) => {
     try {
         if (!req.user) {
             throw new CustomError('Seems like you\'re not logged in!', 401);
         }
+        const { role } = req.user;
+        const currentUserRole = typeof role === 'number' ? role : req.user.role._id;
 
         // Reject any lower level
-        if (req.user.role.rank < requiredRankLevel) {
+        if ( currentUserRole < requiredRoleLevel ) {
             throw new CustomError('Sorry, You\'r not allowed to visit this route!', 403);
         } else {
 

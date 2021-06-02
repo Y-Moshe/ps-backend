@@ -2,46 +2,57 @@ const { Role } = require('../models');
 const { Roles } = require('../middlewares');
 
 const initiate = async () => {
-    const role = await Role.findOne({ rank: 1 }).lean();
+    const numberOfRoles = Object.keys( Roles ).length;
+    const dbNumberOfRoles = await Role.countDocuments();
 
-    if (role) {
-        return role._id;
+    // If Roles exists on DB and no changes are made, skip all.
+    if ( dbNumberOfRoles === numberOfRoles ) {
+        return;
     }
 
     const roles = [
         {
-            rank: Roles.MEMBER,
+            _id: Roles.MEMBER,
             title: 'Member',
             description: 'The initial user role, can make orders, update account details.'
         },
         {
-            rank: Roles.EDITOR,
+            _id: Roles.EDITOR,
             title: 'Editor',
             description: 'Can edit, add products and categories.'
         },
         {
-            rank: Roles.MANAGER,
+            _id: Roles.MANAGER,
             title: 'Manager',
             description: 'Can view all orders, comments.'
         },
         {
-            rank: Roles.ADMINISTRATOR,
+            _id: Roles.ADMINISTRATOR,
             title: 'Administrator',
-            description: 'Can delete products, set user roles and ban users.'
+            description: 'Can delete products and set user roles.'
         },
         {
-            rank: Roles.S_ADMINISTRATOR,
+            _id: Roles.S_ADMINISTRATOR,
             title: 'S. Administrator',
             description: 'Super Administrator, can do all. should be just one user with such a role!'
         }
     ];
 
-    const results = await Role.insertMany( roles );
-    console.log('Roles and Ranks initiated successfully!');
+    // If removed or added
+    if ( numberOfRoles !== roles.length ) {
+        throw new Error('Changes on Roles constant detected! but haven\'t been implemented at initiate-roles.js!');
+    }
 
-    return results.find( role => role.rank === 1)._id;
+    if ( dbNumberOfRoles > 0 && dbNumberOfRoles !== numberOfRoles ) {
+        console.log('Changes on Roles detected, preparing to re-initialization');
+        await Role.deleteMany();
+    }
+
+    await Role.insertMany( roles );
+
+    return 'Roles initialized successfully!';
 };
 
 initiate()
-    .then( id => process.env.INITIAL_USER_RANK_ID = id )
-    .catch( err => console.error('Failed to Initiate Roles: ', err) );
+    .then( msg => msg && console.log( msg ))
+    .catch( err => console.error('Failed to Initiate Roles: ', err ));

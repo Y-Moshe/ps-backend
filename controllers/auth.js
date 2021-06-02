@@ -31,8 +31,7 @@ const createUser = async (req, res, next) => {
             firstName,
             lastName,
             userName,
-            email,
-            role: process.env.INITIAL_USER_RANK_ID
+            email
         });
     
         // Hashing the password
