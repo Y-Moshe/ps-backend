@@ -10,8 +10,9 @@ const Roles = {
 
 /**
  * This Middleware checks user access authorization by his role.
+ * req.userLevel is set as number for anyuse.
  * @requires `authenticate` Middleware to be used before!
- * @param {number} requiredRoleLevel The required role level, use `Roles` constant.
+ * @param {number} requiredRoleLevel The required role level, use `Roles` constant or set 0 to allow for all.
  * @returns express middleware
  */
 const middleware = ( requiredRoleLevel ) => (req, res, next) => {
@@ -21,6 +22,7 @@ const middleware = ( requiredRoleLevel ) => (req, res, next) => {
         }
         const { role } = req.user;
         const currentUserRole = typeof role === 'number' ? role : req.user.role._id;
+        req.userLevel = currentUserRole;
 
         // Reject any lower level
         if ( currentUserRole < requiredRoleLevel ) {
