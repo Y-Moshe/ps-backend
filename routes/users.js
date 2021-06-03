@@ -1,8 +1,8 @@
 const express = require('express');
 
 const controllers = require('../controllers/users');
-const { upload } = require('../functions');
-const { authenticate, authorize, Roles } = require('../middlewares');
+const { authenticate, authorize, Roles, validateIds } = require('../middlewares');
+const { getVersion } = require('../utils');
 
 const routes = express.Router();
 
@@ -16,27 +16,22 @@ routes.get( '', authenticate, authorize( Roles.MANAGER ), controllers.getUsers )
 // GET: /api/v@/users/search
 routes.get( '/search', controllers.searchUser );
 
-// GET: /api/v@/users/:id
-routes.get( '/:id', controllers.getUser );
-
 // GET: /api/v@/users/availability
 routes.get( '/availability', controllers.checkAvailability );
 
+// GET: /api/v@/users/:id
+routes.get( '/:id', validateIds, controllers.getUser );
+
 // PATCH: /api/v@/users/:id (Protected)
-routes.patch( '/:id', authenticate, upload.single('image'), controllers.updateUser );
+routes.patch( '/:id', authenticate, validateIds, authorize( 0 ), controllers.updateUser );
 
 // PATCH: /api/v@/users/:id/role (Protected)
-routes.patch( '/:id/role', authenticate, authorize( Roles.ADMINISTRATOR ), controllers.changeRole );
-
-// PUT: /api/v@/users/:id/ban (Protected)
-routes.put( '/:id/ban', authenticate, authorize( Roles.ADMINISTRATOR ), controllers.banUser );
-
-// PUT: /api/v@/users/:id/unban (Protected)
-routes.put( '/:id/unban', authenticate, authorize( Roles.ADMINISTRATOR ), controllers.unBanUser );
+routes.patch( '/:id/role', authenticate, validateIds, authorize( Roles.ADMINISTRATOR ), controllers.updateRole );
 
 /***** Orders Related routes *****/
 
 // GET: /api/v@/users/:id/orders (Protected)
-routes.get( '/:id/orders', authenticate, controllers.getUserOrders );
+routes.get( '/:id/orders', authenticate, validateIds,
+    (req, res) => res.redirect(`/api/v${getVersion()}/orders?userId=${req.params.id}`) );
 
 module.exports = routes;
