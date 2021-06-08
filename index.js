@@ -20,6 +20,7 @@ const { getVersion } = require('./utils');
 
 const BASE_URI = `/api/v${ getVersion() }`;
 const app = express();
+app.request.baseURI = BASE_URI;
 
 /**
  * A middleware to delay the response from the server.
