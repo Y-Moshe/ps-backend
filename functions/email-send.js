@@ -8,8 +8,9 @@ sendGridMail.setApiKey( SENDGRID_API_KEY );
  */
 const Templates = {
     CONTACT:        'd-92d2f11b2e6e4faf8a5150f93ea1d806',
-    VERIFY_EMAIL:   'd-eb2fd87b7a164b6db4082fb8c8ed1f2e',
-    PASSWORD_RESET: 'd-73871e30d17a4cf5be809a34403b1d55'
+    VERIFY_EMAIL:   'd-07a8ac1aeda14695be38aa8c58d21d2a',
+    PASSWORD_RESET: 'd-4883aaa9bea841a09c12ca76382191a3',
+    ORDER:          'd-71b100f6eca14f13a6ea0ff05ba8161c'
 };
 
 /**
