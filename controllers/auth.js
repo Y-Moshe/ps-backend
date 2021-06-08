@@ -55,7 +55,8 @@ const createUser = async (req, res, next) => {
         const url = CLIENT_URI.concat('/auth/verify?token=', verifyToken);
         const templateData = {
             fullName: firstName + ' ' + lastName,
-            verifyLink: url
+            verifyLink: url,
+            websiteLink: CLIENT_URI
         };
 
         await emailSend(
@@ -136,7 +137,8 @@ const resendVerification = async (req, res, next) => {
         const url = CLIENT_URI.concat('/auth/verify?token=', token);
         const templateData = {
             fullName: firstName + ' ' + lastName,
-            verifyLink: url
+            verifyLink: url,
+            websiteLink: CLIENT_URI
         };
 
         await emailSend(
@@ -227,7 +229,8 @@ const forgotPassword = async (req, res, next) => {
         const templateData = {
             fullName: user.firstName + ' ' + user.lastName,
             resetPasswordLink: url,
-            contactLink: CLIENT_URI.concat('/contact')
+            contactLink: CLIENT_URI.concat('/contact'),
+            websiteLink: CLIENT_URI
         };
 
         await emailSend(
