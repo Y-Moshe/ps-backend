@@ -2,7 +2,6 @@ const express = require('express');
 
 const controllers = require('../controllers/users');
 const { authenticate, authorize, Roles, validateIds } = require('../middlewares');
-const { getVersion } = require('../utils');
 
 const routes = express.Router();
 
@@ -32,6 +31,6 @@ routes.patch( '/:id/role', authenticate, validateIds, authorize( Roles.ADMINISTR
 
 // GET: /api/v@/users/:id/orders (Protected)
 routes.get( '/:id/orders', authenticate, validateIds,
-    (req, res) => res.redirect(`/api/v${getVersion()}/orders?userId=${req.params.id}`) );
+    ( req, res ) => res.redirect( `${req.baseURI}/orders?userId=${req.params.id}` ));
 
 module.exports = routes;
