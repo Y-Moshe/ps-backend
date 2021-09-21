@@ -1,5 +1,5 @@
 # Getting Started
 
-# API and Documentation
+# API Documentation
 
-Yet to be implemented
+[Postman Documentation](https://documenter.getpostman.com/view/8382285/TzecBjmq)
