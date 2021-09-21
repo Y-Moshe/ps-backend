@@ -1,7 +1,12 @@
 const express = require('express');
 
 const controllers = require('../controllers/comments');
-const { authenticate, authorize, Roles } = require('../middlewares');
+const {
+  authenticate,
+  authorize,
+  Roles,
+  validateIds
+} = require('../middlewares');
 
 const routes = express.Router();
 
@@ -10,18 +15,18 @@ const routes = express.Router();
 // v@ = dynamic version base on package.json, example: /api/v2/users
 
 // GET: /api/v@/comments (Protected)
-routes.get('', authenticate, authorize( Roles.MANAGER ), controllers.getComments);
+routes.get('', authenticate, authorize( Roles.MANAGER ), validateIds, controllers.getComments);
 
 // GET, PATCH, DELETE: /api/v@/comments/:id
 routes.route('/:id')
 
 // GET:
-  .get( controllers.getComment )
+  .get( validateIds, controllers.getComment )
 
 // PATCH: (Protected)
-  .patch( authenticate, controllers.editComment )
+  .patch( validateIds, authenticate, controllers.editComment )
 
 // DELETE: (Protected)
-  .delete( authenticate, controllers.deleteComment );
+  .delete( validateIds, authenticate, controllers.deleteComment );
 
 module.exports = routes;
