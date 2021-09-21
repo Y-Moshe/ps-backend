@@ -31,9 +31,11 @@ routes.delete( '/:id', authenticate, authorize( Roles.ADMINISTRATOR ), controlle
 /***** Comments Ralated routes *****/
 
 // GET: /api/v@/products/:id/comments
-routes.get( '/:id/comments', controllers.getProductComments );
+routes.get( '/:id/comments',
+    ( req, res ) => res.redirect( `${req.baseURI}/comments?productId=${req.params.id}` ));
 
 // POST: /api/v@/products/:id/comments (Protected)
-routes.post( '/:id/comments', authenticate, controllers.addCommentToProduct );
+routes.post( '/:id/comments',
+    ( req, res ) => res.redirect( `${req.baseURI}/comments?productId=${req.params.id}` ));
 
 module.exports = routes;
