@@ -1,79 +1,116 @@
-const { Comment } = require('../models');
-const { getPopulateQuery } = require('../utils');
+const { Comment, Product } = require('../models'),
+      { getPopulateQuery, CustomError } = require('../utils');
 
-// GET: /api/comments
-exports.getComments = (req, res, next) => {
-  const populateQuery = getPopulateQuery(req.query, 'user', 'product');
+// GET: /api/v@/comments (Protected)
+const getComments = async (req, res, next) => {
+    try {
+        const { userId, productId } = req.query;
+        let condition = { };
 
-  Comment.find().populate(populateQuery)
-    .then(comments => res.status(200).json( comments ))
-    .catch(error => next( error ))
-};
+        if ( userId && productId ) {
+            condition = { user: userId, product: productId };
+        } else if ( userId && !productId ) {
+            condition = { user: userId };
+        } else if ( !userId && productId ) {
+            condition = { product: productId };
+        }
 
-// GET: /api/comments/:id
-exports.getComment = (req, res, next) => {
-  const populateQuery = getPopulateQuery(req.query, 'user', 'product');
-  const commentId = req.params.id;
-
-  Comment.findOne({ _id: commentId }).populate(populateQuery)
-    .then(comment => res.status(200).json( comment ))
-    .catch(error => next( error ))
-};
-
-// PATCH: /api/comments/:id
-exports.editComment = (req, res, next) => {
-  const commentId = req.params.id;
-
-  Comment.findOne({ _id: commentId }).populate('user')
-    .then(comment => {
-    const currentUserRole = req.user.role.rank;
-    const commentUserRole = comment.user.role.rank;
-
-    // If the same user who comment the msg request to edit, allow.
-    // or if a higher rank user request to edit, allow.
-    if (comment.user._id === req.user._id
-        || currentUserRole > commentUserRole) {
-      Comment.updateOne({ _id: commentId }, {
-        text: req.body.text,
-        lastEdit: req.body.lastEdit,
-        isEdit: true
-      }).then(() => {
-        return res.status(200).json({
-          message: 'The Comment has been Edited successfully!'
-        });
-      }).catch(err => next( err ));
-
-    } else {
-      return res.status(401).json({
-        message: 'You are not allowd to manipulate this Comment!'
-      });
+        const query = getPopulateQuery(req.query, 'user', 'product');
+        const comments = await Comment.find( condition )
+                                      .populate( query )
+                                      .lean();
+                                      
+        const status = comments.length > 0 ? 200 : 204;
+        res.status( status ).json( comments );
+    } catch (error) {
+        next( error );
     }
-  }).catch(err => next( err ));
 };
 
-// DELETE: /api/comments/:id
-exports.deleteComment = (req, res, next) => {
-  const commentId = req.params.id;
+// GET: /api/v@/comments/:id
+const getComment = async (req, res, next) => {
+    try {
+        const query = getPopulateQuery(req.query, 'user', 'product');
+        const { id: _id } = req.params;
+      
+        const comment = await Comment.findById( _id )
+                                     .populate( query )
+                                     .lean();
+        if (!comment) {
+            throw new CustomError('Could not found the comment', 404);
+        }
 
-  Comment.findOne({ _id: commentId }).populate('user')
-    .then(comment => {
-    const currentUserRole = req.user.role.rank;
-    const commentUserRole = comment.user.role.rank;
-
-    // If the same user who comment the msg request to delete, allow.
-    // or if a higher rank user request to delete, allow.
-    if (comment.user._id === req.user._id
-        || currentUserRole > commentUserRole) {
-      Comment.deleteOne({ _id: commentId }).then(() => {
-        return res.status(200).json({
-          message: 'The Comment has been deleted successfully!'
-        });
-      }).catch(err => next( err ));
-
-    } else {
-      return res.status(401).json({
-        message: 'You are not allowd to manipulate this Comment!'
-      });
+        res.status( 200 ).json( comment );
+    } catch (error) {
+        next( error );
     }
-  }).catch(err => next( err ));
 };
+
+// PATCH: /api/v@/comments/:id (Protected)
+const editComment = async (req, res, next) => {
+    try {
+        const { id: _id } = req.params;
+        const { text } = req.body;
+
+        const comment = await Comment.findById( _id )
+                                     .populate( 'user' );
+        if (!comment) {
+            throw new CustomError('Could not found the comment', 404);
+        }
+
+        const currentUserRole = req.user.role.rank;
+        const commentUserRole = comment.user.role.rank;
+
+        // Reject if it's not the creater or lower role
+        if ( req.user._id !== comment.user._id ||
+             currentUserRole <= commentUserRole) {
+            throw new CustomError('You are not allowd to manipulate this Comment!', 403);
+        }
+
+        comment.text = text;
+        comment.lastEdit = new Date();
+        // Is populated role saved as object instead of id?
+        await comment.save();
+
+        res.status( 200 ).json( comment );
+    } catch (error) {
+        next( error );
+    }
+};
+
+// DELETE: /api/v@/comments/:id (Protected)
+const deleteComment = async (req, res, next) => {
+    try {
+        const { id: _id } = req.params;
+    
+        const comment = await Comment.findById( _id )
+                                     .populate( 'user' );
+        if (!comment) {
+            throw new CustomError('Could not found the comment', 404);
+        }
+            
+        const currentUserRole = req.user.role.rank;
+        const commentUserRole = comment.user.role.rank;
+    
+        // Reject if it's not the creater or lower role
+        if ( req.user._id !== comment.user._id ||
+             currentUserRole <= commentUserRole) {
+            throw new CustomError('You are not allowd to manipulate this Comment!', 403);
+        }
+    
+        // Remove the comment id from the comments array prop on product.
+        await Product.findOneAndUpdate({ _id: comment.product }, { $pull: { comments: _id }});
+        await Comment.findByIdAndDelete( _id );
+    
+        res.status( 200 ).json({ message: 'The deleted successfully!' });
+    } catch (error) {
+        next( error );
+    }
+};
+
+module.exports = {
+  getComments,
+  getComment,
+  editComment,
+  deleteComment
+}
