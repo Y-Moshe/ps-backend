@@ -210,8 +210,8 @@ const changePassword = async (req, res, next) => {
     }
 };
 
-// POST: /api/v@/auth/password/forgot
-const forgotPassword = async (req, res, next) => {
+// POST: /api/v@/auth/password/recover
+const recoverPassword = async (req, res, next) => {
     try {
         const email = req.body.email.trim().toLowerCase();
     
@@ -277,6 +277,6 @@ module.exports = {
     resendVerification,
     verifyToken,
     changePassword,
-    forgotPassword,
+    recoverPassword,
     resetPassword
 };

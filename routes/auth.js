@@ -28,8 +28,8 @@ routes.post( '/verify/token', controllers.verifyToken );
 // POST: /api/v@/auth/password/change (Protected)
 routes.post( '/password/change', authenticate, controllers.changePassword );
 
-// POST: /api/v@/auth/password/forgot
-routes.post( '/password/forgot', controllers.forgotPassword );
+// POST: /api/v@/auth/password/recover
+routes.post( '/password/recover', controllers.recoverPassword );
 
 // POST: /api/v@/auth/password/reset
 routes.post( '/password/reset', controllers.resetPassword );
