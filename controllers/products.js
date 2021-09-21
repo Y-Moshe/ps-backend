@@ -1,196 +1,204 @@
-const passport = require('passport');
-const fs = require('fs');
+const { Product, Comment } = require('../models'),
+      { AWS_URL } = require('../config'),
+      { getPopulateQuery, CustomError } = require('../utils');
 
-const { Product, Comment } = require('../models');
-const { getPopulateQuery } = require('../utils');
-function deleteSavedImage(path, res) {
-  // Delete the file only if it's exists!
-  if (fs.existsSync(path)) {
-    fs.unlink(path, error => {
-      if (error) {
-        console.log(error);
-      }
-    });
-  }
+// GET: /api/v@/products
+const getProducts = async (req, res, next) => {
+    try {
+        const query = getPopulateQuery(req.query, 'category', 'comments')
+        const { page, per_page, categoryId } = req.query;
+        let condition = { };
 
-  if (res) {
-    return res.status(401).json({
-      message: 'You are not allowed to use this route!'
-    });
-  }
-}
+        if ( categoryId ) {
+            condition = { category: categoryId }
+        }
 
-// GET: /api/products
-exports.getProducts = (req, res, next) => {
-  const populateQuery = getPopulateQuery(req.query, 'category', 'comments');
-  const pageSize = +req.query.pageSize;
-  const currentPage = +req.query.currentPage;
-  const category = req.query.category;
+        const paginateResponse = await Product.paginate(condition, {
+            page: page || 1,
+            limit: per_page || 10,
+            populate: query,
+            lean: true,
+            leanWithId: false
+        });
 
-  if (!category || !currentPage || !pageSize) {
-    return res.status(400).json({
-      message: 'Expecting query params to be sent!'
-    });
-  }
-
-  let query = Product.find({ category });
-
-  // Give the exact amount of products per page, skip previous.
-  query.skip(pageSize * (currentPage - 1)).limit(pageSize);
-
-  if (category === 'all') {
-    query = Product.find();
-  }
-
-  query.populate(populateQuery).then(result => {
-    res.status(200).json({
-      products: result,
-      total: result.length
-    });
-  }).catch(error => next( error ));
-};
-
-// GET: /api/products/random
-exports.get3RandomProducts = (req, res, next) => {
-  const populateQuery = getPopulateQuery(req.query, 'category', 'comments');
-
-  Product.countDocuments().then(count => {
-    if (count <= 3) {
-      return res.status(204).json({
-        message: 'there\'s no products, at least 4 is required'
-      });
+        const status = paginateResponse.totalDocs > 0 ? 200 : 204;
+        res.status( status ).json( paginateResponse );
+    } catch (error) {
+        next( error );
     }
+};
 
-    let random = Math.floor(Math.random() * count) - 3;
-    while(random < 0) {
-      random = Math.floor(Math.random() * count) - 3;
+// GET: /api/v@/products/random
+const get3RandomProducts = async (req, res, next) => {
+    try {
+        const query = getPopulateQuery(req.query, 'category', 'comments');
+
+        const productsLength = await Product.countDocuments();
+        if ( productsLength < 4 ) {
+            return res.status( 204 ).json({
+                message: 'there\'s no products, at least 4 is required'
+            }).end();
+        }
+
+        const random = Math.abs(Math.floor(Math.random() * productsLength) - 3);
+
+        const products = await Product.find()
+                                      .skip( random ).limit( 3 )
+                                      .populate( query ).lean();
+        
+        res.status( 200 ).json( products );
+    } catch (error) {
+        next( error );
     }
-
-    Product.find()
-      .skip(random).limit(3).populate(populateQuery)
-      .then(result => {
-      res.status(200).json({
-        products: result
-      });
-    }).catch(error => next( error ));
-  });
 };
 
-// GET: /api/products/:id
-exports.getProduct = (req, res, next) => {
-  const populateQuery = getPopulateQuery(req.query, 'category', 'comments');
-  const productId = req.params.id;
+// GET: /api/v@/products/:id
+const getProduct = async (req, res, next) => {
+    try {
+        const query = getPopulateQuery(req.query, 'category', 'comments');
+        const { id: _id } = req.params;
 
-  Product.findOne({ _id: productId }).populate(populateQuery)
-    .then(product => res.status(200).json( product ))
-    .catch(error => next( error ));
+        const product = await Product.findById( _id )
+                                     .populate( query )
+                                     .lean();
+        if ( !product ) {
+            throw new CustomError(`Could not found the product ${ _id }`, 404);
+        }
+        
+        res.status( 200 ).json( product );
+    } catch (error) {
+        next( error );
+    }
 };
 
-// POST: /api/products (Protected, Admin Route)
-exports.addProduct = (req, res, next) => {
-  // If the user is not admin quit and remove product image!
-  if (!req.user || req.user.role.rank < 2) {
-    return deleteSavedImage(req.file.path, res);
-  }
+// POST: /api/v@/products (Protected)
+const addProduct = async (req, res, next) => {
+    try {
+        const {
+            name,
+            description,
+            price,
+            content,
+            categoryId
+        } = req.body;
+        let { imagePath } = req.body;
+        
+        if ( imagePath && req.file ) {
+            throw new CustomError(`Bad parameters, 'imagePath' or 'image(file)' not both`, 400);
+        }
 
-  const product = new Product({
-    name: req.body.name,
-    description: req.body.description,
-    price: +req.body.price,
-    category: req.body.categoryId,
-    content: req.body.content
-  });
+        if ( !imagePath && req.file ) {
+            imagePath = AWS_URL.concat('/', req.file.key);
+        }
 
-  product.imagePath = process.env.AWS_URL.concat('/', req.file.key);
+        const product = new Product({
+            name,
+            description,
+            imagePath,
+            price,
+            content,
+            category: categoryId
+        });
+        await product.save();
 
-  product.save().then(() => {
-    res.status(201).json({
-      message: 'The Product has been added successfully!'
-    });
-  }).catch(error => {
-    deleteSavedImage(req.file.path, res);
-    next(error);
-  });
+        res.status( 201 ).json({
+            message: `Product ${ product.name } has been created successfully!`,
+            product
+        });
+    } catch (error) {
+        next( error );
+    }
 };
 
-// PATCH: /api/products/:id (Protected, Admin Route)
-exports.editProduct = (req, res, next) => {
-  // If the user is not admin quit and remove product image!
-  if (!req.user || req.user.role.rank < 2) {
-    return deleteSavedImage(req.file.path, res);
-  }
+// PATCH: /api/v@/products/:id (Protected)
+const editProduct = async (req, res, next) => {
+    try {
+        const { id: _id } = req.params;
+        const {
+            name,
+            description,
+            price,
+            content,
+            categoryId
+        } = req.body;
+        let { imagePath } = req.body;
+        
+        if ( imagePath && req.file ) {
+            throw new CustomError(`Bad parameters, 'imagePath' or 'image(file)' not both`, 400);
+        }
 
-  const productId = req.params.id;
-  const oldImagePath = req.body.imagePath;
-  let imagePath = oldImagePath;
+        if ( !imagePath && req.file ) {
+            imagePath = AWS_URL.concat('/', req.file.key);
+        }
 
-  if (req.file) {
-    imagePath = req.protocol + '://' + req.get('host').concat('/images/', req.file.filename); // for Localhost
-    // imagePath = process.env.AWS_URL.concat('/', req.file.key);
-  }
+        const product = await Product.findById( _id );
 
-  Product.updateOne({ _id: productId }, {
-    name: req.body.name,
-    description: req.body.description,
-    price: +req.body.price,
-    categoryId: req.body.categoryId,
-    content: req.body.content,
-    imagePath: imagePath
-   }).then(() => {
-    deleteSavedImage(oldImagePath);
+        if ( !product ) {
+            throw new CustomError(`Could not found user ${ _id }`, 404);
+        }
 
-    res.status(200).json({
-      message: 'The Product has been updated successfully!'
-    });
-   }).catch(error => {
-    deleteSavedImage(req.file.path, res);
-    next(error);
-   });
+        if ( name && product.name !== name ) {
+            product.name = name;
+        }
+
+        if ( description && product.description !== description ) {
+            product.description = description;
+        }
+
+        if ( imagePath && product.imagePath !== imagePath ) {
+            product.imagePath = imagePath;
+        }
+
+        if ( price && product.price !== price ) {
+            product.price = price;
+        }
+
+        if ( content && product.content !== content ) {
+            product.content = content;
+        }
+
+        if ( categoryId && product.category !== categoryId ) {
+            product.category = categoryId;
+        }
+
+        await product.save();
+
+        res.status( 200 ).json({
+            message: `Product ${ product.name } has been updated successfully!`,
+            product
+        });
+    } catch (error) {
+        next( error );
+    }
 };
 
-// DELETE: /api/products/:id (Admin Route)
-exports.deleteProduct = (req, res, next) => {
-  const productId = req.params.id;
-  let imagePath;
-  Product.findOne({ _id: productId }).then(product => imagePath = product.imagePath);
+// DELETE: /api/v@/products/:id (Protected)
+const deleteProduct = async (req, res, next) => {
+    try {
+        const { id: _id } = req.params;
 
-  Comment.deleteMany({ product: productId }).then(() => {
-    Product.deleteOne({ _id: productId }).then(() => {
-      deleteSavedImage(imagePath);
+        const product = await Product.findById( _id ).lean();
+        if ( !product ) {
+            throw new CustomError(`The product ${ _id } does not exists!`, 404);
+        }
 
-      res.status(200).json({
-        message: 'The Product has been deleted successfully!'
-      });
-    }).catch(error => next( error ));
-  }).catch(error => next( error ));
+        // Deleting any related comment to the product, then the product
+        await Comment.deleteMany({ product: { $in: product.comments }});
+        await Product.findByIdAndDelete( _id );
+
+        res.status( 200 ).json({
+            message: `The product ${ product.name }, ${ _id } - deleted successfully!`
+        });
+    } catch (error) {
+        next( error );
+    }
 };
 
-// ********************* Comments Ralated controllers *********************
-
-// GET: /api/products/:id/comments
-exports.getProductComments = (req, res, next) => {
-  const populateQuery = getPopulateQuery(req.query, 'user', 'product');
-  const productId = req.params.id;
-
-  Comment.find({ product: productId }).populate(populateQuery)
-    .then(comments => res.status(200).json( comments ))
-    .catch(error => next( error ))
+module.exports = {
+  getProducts,
+  get3RandomProducts,
+  getProduct,
+  addProduct,
+  editProduct,
+  deleteProduct
 };
-
-// POST: /api/products/:id/comments
-exports.addCommentToProduct = (req, res, next) => {
-  const { date, text } = req.body;
-  const productId = req.params.id;
-  const userId = req.user._id;
-
-  new Comment({
-    date,
-    text,
-    user: userId,
-    product: productId
-  }).save().then(() => {
-    res.status(200).json({
-      message: 'The Comment has been added successfully!'
-    });
-  }).catch(err => next( err ));
-}
