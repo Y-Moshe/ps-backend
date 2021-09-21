@@ -1,7 +1,7 @@
-const { emailSend, Templates }     = require('../functions'),
-      { SENDGRID_VERIFIED_SENDER } = require('../config'),
-      { isValidEmail }             = require('../models/validators'),
-      { CustomError }              = require('../utils');
+const { emailSend, Templates } = require('../functions'),
+      { isValidEmail }         = require('../models/validators'),
+      { CustomError }          = require('../utils');
+const { SENDGRID_VERIFIED_SENDER, CLIENT_URI } = require('../config');
 
 const contact = async ( req, res, next ) => {
     try {
@@ -9,7 +9,8 @@ const contact = async ( req, res, next ) => {
         const templateData = {
             fullName: (firstName + ' ' + lastName).trim(),
             email: email.trim().toLowerCase(),
-            message: message.trim()
+            message: message.trim(),
+            websiteLink: CLIENT_URI
         };
 
         if (!isValidEmail( email )) {
