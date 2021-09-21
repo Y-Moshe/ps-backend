@@ -1,7 +1,7 @@
 const express = require('express');
 
 const controllers = require('../controllers/orders');
-const { authenticate, authorize, Roles } = require('../middlewares');
+const { authenticate, authorize } = require('../middlewares');
 
 const routes = express.Router();
 
@@ -10,7 +10,7 @@ const routes = express.Router();
 // v@ = dynamic version base on package.json, example: /api/v2/users
 
 // GET: /api/v@/orders
-routes.get( '', authenticate, authorize( Roles.MANAGER ), controllers.getOrders );
+routes.get( '', authenticate, authorize( 0 ), controllers.getOrders );
 
 // GET: /api/v@/orders/:id (Protected)
 routes.get( '/:id', authenticate, controllers.getOrder );
