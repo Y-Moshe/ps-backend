@@ -12,5 +12,5 @@ module.exports = {
     SENDGRID_API_KEY: process.env.SENDGRID_API_KEY,
     SENDGRID_VERIFIED_SENDER: process.env.SENDGRID_VERIFIED_SENDER,
 
-    CLIENT_URI: "http://localhost:3000"
+    CLIENT_URI: process.env.CLIENT_URI || "http://localhost:3000"
 }
